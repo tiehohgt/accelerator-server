@@ -14,21 +14,37 @@ jobs:
         uses: actions/checkout@v4
 
       # Официальный контейнер Kivy: внутри buildozer, JDK 17 и Android SDK.
-      # Внутри образа рабочая папка /home/user/hostcwd, туда монтируем репозиторий.
-      # Кэш ~/.buildozer между запусками сильно ускоряет повторные сборки.
+      # Рабочая папка образа — /home/user/hostcwd, туда монтируем репозиторий.
       - name: Собрать APK
         run: |
-          # Создаём папку кэша от имени раннера: иначе Docker сделает её
-          # владельцем root, и пользователь внутри контейнера не сможет писать.
+          # Папку кэша создаём от имени раннера: иначе Docker сделает её
+          # владельцем root и пользователь внутри контейнера не сможет писать.
           mkdir -p "$HOME/.buildozer"
 
+          # buildozer перекачивает p4a только по "buildozer android update",
+          # поэтому устаревший клон перебил бы p4a.branch = develop из spec-файла.
+          rm -rf "$HOME/.buildozer/android/platform/python-for-android"
+
           # У образа ENTRYPOINT = buildozer, поэтому команду пишем БЕЗ слова
-          # buildozer: иначе получится "buildozer buildozer android debug".
+          # buildozer: иначе выйдет "buildozer buildozer android debug".
           docker run --rm \
             --volume "$PWD":/home/user/hostcwd \
             --volume "$HOME/.buildozer":/home/user/.buildozer \
             ghcr.io/kivy/buildozer:latest \
             android debug
+
+      # С какой именно ревизией p4a реально собралось.
+      # Выполняется даже при падении сборки — это первое, что нужно проверять.
+      - name: Какая ревизия p4a использовалась
+        if: always()
+        run: |
+          P4A="$HOME/.buildozer/android/platform/python-for-android"
+          if [ -d "$P4A/.git" ]; then
+            echo "ветка:  $(git -C "$P4A" rev-parse --abbrev-ref HEAD)"
+            echo "коммит: $(git -C "$P4A" rev-parse HEAD)"
+          else
+            echo "клон p4a не найден: $P4A"
+          fi
 
       - name: Показать, что получилось
         run: ls -lh bin/

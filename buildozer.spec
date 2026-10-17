@@ -50,8 +50,18 @@ android.ndk_api = 24
 # Собирать именно APK (а не AAB)
 android.debug_artifact = apk
 
-# Не удалять каталог сборки после успеха — удобно для отладки
 p4a.bootstrap = sdl2
+
+# ВАЖНО: какую ветку python-for-android брать.
+#
+# Ветка master стабильна для хостового Python ДО 3.12 включительно.
+# В контейнере kivy/buildozer стоит Python 3.14, поэтому нужна ветка develop
+# (она и рассчитана на 3.14). В ней же лежит фикс kivy/python-for-android#3366:
+# без него сборка падает с
+#   charset_normalizer-...-android_24_arm64_v8a.whl is not a supported wheel
+# потому что p4a собирал android-колесо сам и отдавал его хостовому pip.
+# С веткой develop подходящие колёса берутся прямо с PyPI.
+p4a.branch = develop
 
 [buildozer]
 
