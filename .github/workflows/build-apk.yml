@@ -18,11 +18,17 @@ jobs:
       # Кэш ~/.buildozer между запусками сильно ускоряет повторные сборки.
       - name: Собрать APK
         run: |
+          # Создаём папку кэша от имени раннера: иначе Docker сделает её
+          # владельцем root, и пользователь внутри контейнера не сможет писать.
+          mkdir -p "$HOME/.buildozer"
+
+          # У образа ENTRYPOINT = buildozer, поэтому команду пишем БЕЗ слова
+          # buildozer: иначе получится "buildozer buildozer android debug".
           docker run --rm \
             --volume "$PWD":/home/user/hostcwd \
             --volume "$HOME/.buildozer":/home/user/.buildozer \
             ghcr.io/kivy/buildozer:latest \
-            buildozer android debug
+            android debug
 
       - name: Показать, что получилось
         run: ls -lh bin/
