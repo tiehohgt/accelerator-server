@@ -13,19 +13,23 @@ jobs:
       - name: Забрать код
         uses: actions/checkout@v4
 
-      - name: Собрать APK через buildozer
-        id: buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        with:
-          command: buildozer android debug
-          buildozer_version: stable
+      # Официальный контейнер Kivy: внутри buildozer, JDK 17 и Android SDK.
+      # Внутри образа рабочая папка /home/user/hostcwd, туда монтируем репозиторий.
+      # Кэш ~/.buildozer между запусками сильно ускоряет повторные сборки.
+      - name: Собрать APK
+        run: |
+          docker run --rm \
+            --volume "$PWD":/home/user/hostcwd \
+            --volume "$HOME/.buildozer":/home/user/.buildozer \
+            ghcr.io/kivy/buildozer:latest \
+            buildozer android debug
 
       - name: Показать, что получилось
-        run: ls -lh "${{ steps.buildozer.outputs.filename }}"
+        run: ls -lh bin/
 
       - name: Выложить APK как артефакт
         uses: actions/upload-artifact@v4
         with:
           name: acceleratorserver-apk
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: bin/*.apk
           if-no-files-found: error
