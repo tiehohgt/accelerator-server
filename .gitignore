@@ -1,0 +1,10 @@
+# Артефакты сборки
+bin/
+.buildozer/
+
+# Служебное
+__pycache__/
+*.pyc
+.DS_Store
+.idea/
+.vscode/
